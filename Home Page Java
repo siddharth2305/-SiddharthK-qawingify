@@ -1,0 +1,84 @@
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class HomePageAutomation {
+    private WebDriver driver;
+    private WebDriverWait wait;
+
+    public HomePageAutomation() {
+        System.setProperty("webdriver.chrome.driver", "path/to/chromedriver");
+        driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, 10);
+    }
+
+    public void login(String username, String password) {
+        driver.get("https://example.com/home");
+        driver.findElement(By.id("username")).sendKeys(username);
+        driver.findElement(By.id("password")).sendKeys(password);
+        driver.findElement(By.id("login-button")).click();
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("transaction-table")));
+    }
+
+    public void clickAmountHeader() {
+        WebElement amountHeader = driver.findElement(By.xpath("//th[contains(text(), 'AMOUNT')]"));
+        amountHeader.click();
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Double> getTransactionAmounts() {
+        List<WebElement> transactionValues = driver.findElements(By.xpath("//table[@id='transaction-table']//td[4]"));
+        List<Double> amounts = new ArrayList<>();
+        for (WebElement value : transactionValues) {
+            String amountText = value.getText().replace("$", "").replace(",", "");
+            double amountValue = Double.parseDouble(amountText);
+            amounts.add(amountValue);
+        }
+        return amounts;
+    }
+
+    public boolean isListSorted(List<Double> list) {
+        for (int i = 0; i < list.size() - 1; i++) {
+            if (list.get(i) > list.get(i + 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void closeBrowser() {
+        driver.quit();
+    }
+
+    public static void main(String[] args) {
+        HomePageAutomation automation = new HomePageAutomation();
+        String username = "your_username";
+        String password = "your_password";
+
+        // Login and verify successful login
+        automation.login(username, password);
+        WebElement loggedInUserElement = automation.driver.findElement(By.id("logged-in-user"));
+        String loggedInUser = loggedInUserElement.getText();
+        assert loggedInUser.equals(username) : "Login failed";
+
+        // Click on the "AMOUNT" header to sort the values
+        automation.clickAmountHeader();
+
+        // Verify if the values are sorted in ascending order
+        List<Double> amounts = automation.getTransactionAmounts();
+        assert automation.isListSorted(amounts) : "The values in the 'AMOUNT' column are not sorted";
+
+        System.out.println("Functional testing completed successfully");
+
+        // Close the browser
+        automation.closeBrowser();
+    }
+}
